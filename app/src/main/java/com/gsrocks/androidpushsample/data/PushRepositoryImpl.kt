@@ -1,6 +1,7 @@
 package com.gsrocks.androidpushsample.data
 
 import com.gsrocks.androidpushsample.data.model.PushModel
+import com.gsrocks.androidpushsample.data.model.PushTokenModel
 import javax.inject.Inject
 
 class PushRepositoryImpl @Inject constructor(
@@ -8,7 +9,7 @@ class PushRepositoryImpl @Inject constructor(
 ) : PushRepository {
     override suspend fun sendPushToken(token: String): Result<Unit> {
         return try {
-            api.sendPushToken(token)
+            api.sendPushToken(PushTokenModel(token))
             Result.success(Unit)
         } catch (e: Throwable) {
             Result.failure(e)

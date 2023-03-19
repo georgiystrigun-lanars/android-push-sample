@@ -1,8 +1,14 @@
 package com.gsrocks.androidpushsample.push
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.google.firebase.messaging.RemoteMessage.Notification
+import com.gsrocks.androidpushsample.R
 import com.gsrocks.androidpushsample.data.PushRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -22,8 +28,15 @@ class MainFirebaseMessagingService : FirebaseMessagingService() {
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
+    private val notificationManager by lazy {
+        getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
+
     override fun onMessageReceived(message: RemoteMessage) {
         Log.d(TAG, "Received message: \n${message.describe()}")
+        message.notification?.let {
+            showNotification(it, notificationId = message.messageId?.hashCode() ?: 0)
+        }
     }
 
     override fun onNewToken(token: String) {
@@ -37,6 +50,26 @@ class MainFirebaseMessagingService : FirebaseMessagingService() {
     override fun onDestroy() {
         serviceScope.cancel()
         super.onDestroy()
+    }
+
+    private fun showNotification(remoteNotification: Notification, notificationId: Int) {
+        createNotificationChannel()
+        val notification = NotificationCompat.Builder(this, "notifications")
+            .setSmallIcon(R.mipmap.ic_launcher_round)
+            .setContentTitle(remoteNotification.title)
+            .setContentText(remoteNotification.body)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        notificationManager.notify(notificationId, notification)
+    }
+
+    private fun createNotificationChannel() {
+        val notificationChannel = NotificationChannel(
+            "notifications",
+            "Push sample app notifications",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        notificationManager.createNotificationChannel(notificationChannel)
     }
 }
 
