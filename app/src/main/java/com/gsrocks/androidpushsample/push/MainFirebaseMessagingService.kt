@@ -3,10 +3,24 @@ package com.gsrocks.androidpushsample.push
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.gsrocks.androidpushsample.data.PushRepository
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 private const val TAG = "MainFirebaseMessagingService"
 
+@AndroidEntryPoint
 class MainFirebaseMessagingService : FirebaseMessagingService() {
+
+    @Inject
+    lateinit var pushRepository: PushRepository
+
+    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     override fun onMessageReceived(message: RemoteMessage) {
         Log.d(TAG, "Received message: \n${message.describe()}")
@@ -14,7 +28,15 @@ class MainFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         Log.d(TAG, "Refreshed token: $token")
-        // TODO: send token to server
+
+        serviceScope.launch(Dispatchers.IO) {
+            pushRepository.sendPushToken(token)
+        }
+    }
+
+    override fun onDestroy() {
+        serviceScope.cancel()
+        super.onDestroy()
     }
 }
 
